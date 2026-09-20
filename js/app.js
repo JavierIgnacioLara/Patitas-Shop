@@ -263,9 +263,17 @@ function validarLogin(event) {
     const correo = document.getElementById('login-correo').value.trim();
     const clave = document.getElementById('login-clave').value;
     let error = false;
-    error = mostrarMensaje('error-login-correo', !correo ? 'El correo es obligatorio.' : correo.length > 100 ? 'Máximo 100 caracteres.' : !validarCorreo(correo) ? 'Usa @duoc.cl, @profesor.duoc.cl o @gmail.com.' : '', 'error') || error;
-    error = mostrarMensaje('error-login-clave', !clave ? 'La contraseña es obligatoria.' : clave.length < 4 || clave.length > 10 ? 'Debe tener entre 4 y 10 caracteres.' : '', 'error') || error;
-    if (!error) mostrarMensaje('resultado-login', 'Inicio de sesión validado correctamente.', 'ok');
+    error = mostrarMensaje('error-login-correo',!correo? 'El correo es obligatorio.' : correo.length > 100 ? 'Máximo 100 caracteres.': !validarCorreo(correo) ? 'Usa @duoc.cl, @profesor.duoc.cl o @gmail.com.' : '', 'error') || error;
+    error = mostrarMensaje( 'error-login-clave', !clave ? 'La contraseña es obligatoria.' : clave.length < 4 || clave.length > 10 ? 'Debe tener entre 4 y 10 caracteres.' : '', 'error' ) || error;
+    if (!error) {
+        const usuarios = JSON.parse(localStorage.getItem('patitasUsuarios')) || [];
+        const usuario = usuarios.find(
+            u => u.correo === correo && u.clave === clave );
+        if (!usuario) { mostrarMensaje('resultado-login', 'Correo o contraseña incorrectos.', 'error' );
+            return;
+        }
+        mostrarMensaje( 'resultado-login', 'Inicio de sesión validado correctamente.', 'ok' );
+    }
 }
 
 function validarContacto(event) {
@@ -308,7 +316,7 @@ function validarRegistro(event) {
     error = mostrarMensaje('error-registro-direccion', !direccion ? 'La dirección es obligatoria.' : direccion.length > 300 ? 'Máximo 300 caracteres.' : '', 'error') || error;
     if (!error) {
         const usuarios = JSON.parse(localStorage.getItem('patitasUsuarios')) || [];
-        usuarios.push({ run, nombre, apellidos, correo, fechaNacimiento: document.getElementById('registro-fecha').value, region, comuna, direccion, rol: 'Cliente' });
+        usuarios.push({ run, nombre, apellidos, correo, clave, fechaNacimiento: document.getElementById('registro-fecha').value, region, comuna, direccion, rol: 'Cliente' });
         localStorage.setItem('patitasUsuarios', JSON.stringify(usuarios));
         mostrarMensaje('resultado-registro', 'Usuario registrado correctamente.', 'ok');
         event.target.reset();
