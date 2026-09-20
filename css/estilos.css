@@ -175,7 +175,6 @@ main { width: min(1180px, 92%); margin: 0 auto; }
     .cart-table th:nth-child(2), .cart-table td:nth-child(2) { display:none; }
 }
 
-
 .category-tag { display:inline-block; width:max-content; padding:4px 9px; border-radius:999px; background:#fff0d1; color:var(--naranja-oscuro); font-size:.78rem; font-weight:700; }
 .stock-alert { display:inline-block; color:#9c2f27; background:#ffe2df; border-radius:8px; padding:4px 8px; font-size:.8rem; font-weight:700; }
 .full-width { grid-column:1/-1; }
@@ -193,8 +192,12 @@ main { width: min(1180px, 92%); margin: 0 auto; }
 .muted { color:#8b8179; font-size:.85rem; }
 .admin-content .form-card { max-width:760px; }
 .admin-actions { display:flex; gap:10px; flex-wrap:wrap; margin:20px 0; }
+.datos-prueba { margin-top: 25px;}
+.datos-prueba p { margin: 4px 0;}
 
 @media (max-width: 700px) {
     .filter-bar { grid-template-columns:1fr; }
     .cart-product { min-width:160px; }
 }
+
+
