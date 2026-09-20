@@ -57,8 +57,197 @@ function formatoPrecio(valor) {
 }
 
 function obtenerProductos() {
-    const adicionales = JSON.parse(localStorage.getItem('patitasProductos')) || [];
-    return [...productosBase, ...adicionales];
+
+    const adicionales =
+        JSON.parse(localStorage.getItem('patitasProductos')) || [];
+
+    // Crear una copia de los productos base
+    const productos = [...productosBase];
+
+    // Reemplazar los productos base que hayan sido modificados
+    adicionales.forEach(productoActualizado => {
+
+        const indice = productos.findIndex(
+            p => p.id === productoActualizado.id
+        );
+
+        if (indice !== -1) {
+            productos[indice] = productoActualizado;
+        } else {
+            // Si es un producto nuevo, agregarlo
+            productos.push(productoActualizado);
+        }
+    });
+
+    return productos;
+}
+
+function agregarAlCarrito(id) {
+
+    const productos = obtenerProductos();
+
+    const producto = productos.find(p => p.id === id);
+
+    if (!producto) {
+        alert('Producto no encontrado.');
+        return;
+    }
+
+    let carrito = JSON.parse(
+        localStorage.getItem('patitasCarrito')
+    ) || [];
+
+    const productoCarrito = carrito.find(
+        p => p.id === id
+    );
+
+    const cantidadActual = productoCarrito
+        ? productoCarrito.cantidad
+        : 0;
+
+    // Verificar stock disponible
+    if (cantidadActual >= producto.stock) {
+        alert('No hay más stock disponible de este producto.');
+        return;
+    }
+
+    if (productoCarrito) {
+
+        productoCarrito.cantidad += 1;
+
+    } else {
+
+        carrito.push({
+            ...producto,
+            cantidad: 1
+        });
+
+    }
+
+    localStorage.setItem(
+        'patitasCarrito',
+        JSON.stringify(carrito)
+    );
+
+    actualizarContadorCarrito();
+
+    alert(`${producto.nombre} agregado al carrito.`);
+}
+
+// función para mostrar la tabla de productos en el panel de administración
+function mostrarTablaAdminProductos() {
+    const tabla = document.getElementById('tabla-productos-admin');
+    if (!tabla) return;
+    const productos = obtenerProductos();
+    tabla.innerHTML = productos.map(producto => `
+        <tr>
+            <td>${producto.codigo}</td>
+
+            <td>${producto.nombre}</td>
+
+            <td>${producto.categoria}</td>
+
+            <td>${formatoPrecio(producto.precio)}</td>
+
+            <td>
+                <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="${producto.stock}"
+                    id="stock-${producto.id}"
+                    style="width:80px;"
+                >
+            </td>
+
+            <td>
+                <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="${producto.stockCritico}"
+                    id="critico-${producto.id}"
+                    style="width:80px;"
+                >
+            </td>
+
+            <td>
+                <button
+                    type="button"
+                    class="btn btn-orange"
+                    onclick="actualizarStockProducto(${producto.id})"
+                >
+                    Guardar
+                </button>
+            </td>
+
+        </tr>
+    `).join('');
+}
+
+function actualizarStockProducto(id) {
+
+    const productos = obtenerProductos();
+
+    const producto = productos.find(p => p.id === id);
+
+    if (!producto) {
+        alert('Producto no encontrado.');
+        return;
+    }
+
+    const stockInput = document.getElementById(`stock-${id}`);
+    const criticoInput = document.getElementById(`critico-${id}`);
+
+    const nuevoStock = Number(stockInput.value);
+    const nuevoStockCritico = Number(criticoInput.value);
+
+    // Validar stock
+    if (!Number.isInteger(nuevoStock) || nuevoStock < 0) {
+        alert('El stock debe ser un número entero mayor o igual a 0.');
+        return;
+    }
+
+    // Validar stock crítico
+    if (!Number.isInteger(nuevoStockCritico) || nuevoStockCritico < 0) {
+        alert('El stock crítico debe ser un número entero mayor o igual a 0.');
+        return;
+    }
+
+    // Actualizar los datos del producto
+    producto.stock = nuevoStock;
+    producto.stockCritico = nuevoStockCritico;
+
+    // Obtener productos modificados anteriormente
+    const productosGuardados =
+        JSON.parse(localStorage.getItem('patitasProductos')) || [];
+
+    // Buscar si este producto ya había sido modificado
+    const indice = productosGuardados.findIndex(
+        p => p.id === id
+    );
+
+    if (indice !== -1) {
+
+        // Actualizar producto existente
+        productosGuardados[indice] = producto;
+
+    } else {
+
+        // Guardar producto modificado por primera vez
+        productosGuardados.push(producto);
+    }
+
+    // Guardar en LocalStorage
+    localStorage.setItem(
+        'patitasProductos',
+        JSON.stringify(productosGuardados)
+    );
+
+    // Actualizar tabla
+    mostrarTablaAdminProductos();
+
+    alert('Stock actualizado correctamente.');
 }
 
 function guardarProductosAdicionales(productos) {
@@ -209,19 +398,31 @@ function mostrarCarrito() {
 }
 
 function cambiarCantidad(id, cambio) {
+
     const carrito = obtenerCarrito();
     const item = carrito.find(p => p.id === id);
-    const producto = obtenerProductos().find(p => p.id === id);
+    const producto = obtenerProductos().find(
+        p => p.id === id
+    );
+
     if (!item || !producto) return;
-    item.cantidad += cambio;
-    if (item.cantidad <= 0) {
+
+    const nuevaCantidad = item.cantidad + cambio;
+
+    // Si intenta superar el stock
+    if (nuevaCantidad > producto.stock) {
+        alert('Se alcanzó el stock disponible.');
+        return;
+    }
+
+    // Si llega a 0, eliminar del carrito
+    if (nuevaCantidad <= 0) {
         eliminarDelCarrito(id);
         return;
     }
-    if (item.cantidad > producto.stock) {
-        item.cantidad = producto.stock;
-        alert('Se alcanzó el stock disponible.');
-    }
+
+    item.cantidad = nuevaCantidad;
+
     guardarCarrito(carrito);
     mostrarCarrito();
 }
@@ -238,12 +439,44 @@ function vaciarCarrito() {
 }
 
 function finalizarCompra() {
-    if (!obtenerCarrito().length) {
+
+    const carrito = obtenerCarrito();
+
+    if (!carrito.length) {
         alert('Agrega productos antes de finalizar la compra.');
         return;
     }
-    alert('Compra simulada correctamente. ¡Gracias por preferir Patitas Shop!');
+
+    const productos = obtenerProductos();
+
+    // Descontar stock de cada producto comprado
+    carrito.forEach(item => {
+
+        const producto = productos.find(
+            p => p.id === item.id
+        );
+
+        if (producto) {
+            producto.stock -= item.cantidad;
+        }
+
+    });
+
+    // Guardar los productos actualizados
+    localStorage.setItem(
+        'patitasProductos',
+        JSON.stringify(productos)
+    );
+
+    alert(
+        'Compra realizada correctamente. ¡Gracias por preferir Patitas Shop!'
+    );
+
+    // Vaciar carrito después de la compra
     vaciarCarrito();
+
+    // Actualizar la tienda
+    mostrarProductos();
 }
 
 function mostrarMensaje(id, texto, tipo = 'error') {
@@ -260,20 +493,70 @@ function validarCorreo(correo) {
 
 function validarLogin(event) {
     event.preventDefault();
+
     const correo = document.getElementById('login-correo').value.trim();
     const clave = document.getElementById('login-clave').value;
+
     let error = false;
-    error = mostrarMensaje('error-login-correo',!correo? 'El correo es obligatorio.' : correo.length > 100 ? 'Máximo 100 caracteres.': !validarCorreo(correo) ? 'Usa @duoc.cl, @profesor.duoc.cl o @gmail.com.' : '', 'error') || error;
-    error = mostrarMensaje( 'error-login-clave', !clave ? 'La contraseña es obligatoria.' : clave.length < 4 || clave.length > 10 ? 'Debe tener entre 4 y 10 caracteres.' : '', 'error' ) || error;
-    if (!error) {
-        const usuarios = JSON.parse(localStorage.getItem('patitasUsuarios')) || [];
-        const usuario = usuarios.find(
-            u => u.correo === correo && u.clave === clave );
-        if (!usuario) { mostrarMensaje('resultado-login', 'Correo o contraseña incorrectos.', 'error' );
-            return;
-        }
-        mostrarMensaje( 'resultado-login', 'Inicio de sesión validado correctamente.', 'ok' );
+
+    error = mostrarMensaje(
+        'error-login-correo',
+        !correo
+            ? 'El correo es obligatorio.'
+            : correo.length > 100
+                ? 'Máximo 100 caracteres.'
+                : !validarCorreo(correo)
+                    ? 'Usa @duoc.cl, @profesor.duoc.cl o @gmail.com.'
+                    : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-login-clave',
+        !clave
+            ? 'La contraseña es obligatoria.'
+            : clave.length < 4 || clave.length > 10
+                ? 'Debe tener entre 4 y 10 caracteres.'
+                : '',
+        'error'
+    ) || error;
+
+    if (error) return;
+
+    // Obtener usuarios registrados
+    const usuarios = JSON.parse(
+        localStorage.getItem('patitasUsuarios')
+    ) || [];
+
+    // Buscar usuario por correo y contraseña
+    const usuario = usuarios.find(
+        u => u.correo === correo && u.clave === clave
+    );
+
+    // Si no existe
+    if (!usuario) {
+        mostrarMensaje(
+            'resultado-login',
+            'Correo o contraseña incorrectos.',
+            'error'
+        );
+        return;
     }
+
+    // Guardar usuario que inició sesión
+    localStorage.setItem(
+        'patitasUsuarioActual',
+        JSON.stringify(usuario)
+    );
+
+    // Mensaje según el rol
+    mostrarMensaje(
+        'resultado-login',
+        `Inicio de sesión correcto. Bienvenido ${usuario.nombre}.`,
+        'ok'
+    );
+
+    actualizarSesionNavbar();
 }
 
 function validarContacto(event) {
@@ -295,8 +578,11 @@ function validarRun(run) {
     return /^\d{7,8}[0-9Kk]$/.test(run);
 }
 
+
+
 function validarRegistro(event) {
     event.preventDefault();
+
     const run = document.getElementById('registro-run').value.trim();
     const nombre = document.getElementById('registro-nombre').value.trim();
     const apellidos = document.getElementById('registro-apellidos').value.trim();
@@ -305,23 +591,273 @@ function validarRegistro(event) {
     const direccion = document.getElementById('registro-direccion').value.trim();
     const region = document.getElementById('registro-region').value;
     const comuna = document.getElementById('registro-comuna').value;
+
     let error = false;
-    error = mostrarMensaje('error-registro-run', !run ? 'El RUN es obligatorio.' : !validarRun(run) ? 'RUN: 7 a 9 caracteres, sin puntos ni guion.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-nombre', !nombre ? 'El nombre es obligatorio.' : nombre.length > 50 ? 'Máximo 50 caracteres.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-apellidos', !apellidos ? 'Los apellidos son obligatorios.' : apellidos.length > 100 ? 'Máximo 100 caracteres.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-correo', !correo ? 'El correo es obligatorio.' : correo.length > 100 ? 'Máximo 100 caracteres.' : !validarCorreo(correo) ? 'Correo no permitido.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-clave', !clave ? 'La contraseña es obligatoria.' : clave.length < 4 || clave.length > 10 ? 'Debe tener entre 4 y 10 caracteres.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-region', !region ? 'Selecciona una región.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-comuna', !comuna ? 'Selecciona una comuna.' : '', 'error') || error;
-    error = mostrarMensaje('error-registro-direccion', !direccion ? 'La dirección es obligatoria.' : direccion.length > 300 ? 'Máximo 300 caracteres.' : '', 'error') || error;
-    if (!error) {
-        const usuarios = JSON.parse(localStorage.getItem('patitasUsuarios')) || [];
-        usuarios.push({ run, nombre, apellidos, correo, clave, fechaNacimiento: document.getElementById('registro-fecha').value, region, comuna, direccion, rol: 'Cliente' });
-        localStorage.setItem('patitasUsuarios', JSON.stringify(usuarios));
-        mostrarMensaje('resultado-registro', 'Usuario registrado correctamente.', 'ok');
-        event.target.reset();
-        cargarComunas();
+
+    error = mostrarMensaje(
+        'error-registro-run',
+        !run
+            ? 'El RUN es obligatorio.'
+            : !validarRun(run)
+                ? 'RUN: 7 a 9 caracteres, sin puntos ni guion.'
+                : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-nombre',
+        !nombre
+            ? 'El nombre es obligatorio.'
+            : nombre.length > 50
+                ? 'Máximo 50 caracteres.'
+                : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-apellidos',
+        !apellidos
+            ? 'Los apellidos son obligatorios.'
+            : apellidos.length > 100
+                ? 'Máximo 100 caracteres.'
+                : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-correo',
+        !correo
+            ? 'El correo es obligatorio.'
+            : correo.length > 100
+                ? 'Máximo 100 caracteres.'
+                : !validarCorreo(correo)
+                    ? 'Correo no permitido.'
+                    : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-clave',
+        !clave
+            ? 'La contraseña es obligatoria.'
+            : clave.length < 4 || clave.length > 10
+                ? 'Debe tener entre 4 y 10 caracteres.'
+                : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-region',
+        !region ? 'Selecciona una región.' : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-comuna',
+        !comuna ? 'Selecciona una comuna.' : '',
+        'error'
+    ) || error;
+
+    error = mostrarMensaje(
+        'error-registro-direccion',
+        !direccion
+            ? 'La dirección es obligatoria.'
+            : direccion.length > 300
+                ? 'Máximo 300 caracteres.'
+                : '',
+        'error'
+    ) || error;
+
+    if (error) return;
+
+    // Obtener usuarios existentes
+    const usuarios = JSON.parse(
+        localStorage.getItem('patitasUsuarios')
+    ) || [];
+
+    // Verificar RUN duplicado
+    const runExiste = usuarios.some(
+        usuario => usuario.run === run
+    );
+
+    if (runExiste) {
+        mostrarMensaje(
+            'resultado-registro',
+            'El RUN ya se encuentra registrado.',
+            'error'
+        );
+        return;
     }
+
+    // Verificar correo duplicado
+    const correoExiste = usuarios.some(
+        usuario => usuario.correo.toLowerCase() === correo.toLowerCase()
+    );
+
+    if (correoExiste) {
+        mostrarMensaje(
+            'resultado-registro',
+            'El correo ya se encuentra registrado.',
+            'error'
+        );
+        return;
+    }
+
+    // Crear nuevo usuario
+    const nuevoUsuario = {
+        run,
+        nombre,
+        apellidos,
+        correo,
+        clave,
+        fechaNacimiento: document.getElementById('registro-fecha').value,
+        region,
+        comuna,
+        direccion,
+        rol: 'Cliente'
+    };
+
+    // Guardar usuario
+    usuarios.push(nuevoUsuario);
+
+    localStorage.setItem(
+        'patitasUsuarios',
+        JSON.stringify(usuarios)
+    );
+
+    mostrarMensaje(
+        'resultado-registro',
+        'Usuario registrado correctamente.',
+        'ok'
+    );
+
+    event.target.reset();
+    cargarComunas();
+}
+
+function crearAdministradorInicial() {
+
+    const usuarios = JSON.parse(
+        localStorage.getItem('patitasUsuarios')
+    ) || [];
+
+    // Verificar si el administrador ya existe
+    const administradorExiste = usuarios.some(
+        usuario => usuario.correo === 'admin@duoc.cl'
+    );
+
+    // Si ya existe, no hacer nada
+    if (administradorExiste) {
+        return;
+    }
+
+    // Crear administrador predeterminado
+    const administrador = {
+        run: '111111111',
+        nombre: 'Administrador',
+        apellidos: 'Patitas Shop',
+        correo: 'admin@duoc.cl',
+        clave: '123456',
+        fechaNacimiento: '',
+        region: 'Metropolitana',
+        comuna: 'Santiago',
+        direccion: 'Administración Patitas Shop',
+        rol: 'Administrador'
+    };
+
+    // Agregar administrador a la lista
+    usuarios.push(administrador);
+
+    // Guardar usuarios
+    localStorage.setItem(
+        'patitasUsuarios',
+        JSON.stringify(usuarios)
+    );
+
+    console.log('Administrador inicial creado correctamente.');
+}
+
+function obtenerUsuarioActual() {
+    return JSON.parse(
+        localStorage.getItem('patitasUsuarioActual')
+    ) || null;
+}
+
+
+function actualizarSesionNavbar() {
+
+    const usuario = obtenerUsuarioActual();
+
+    // Buscar elementos del menú
+    const navLinks = document.querySelector('.nav-links');
+
+    if (!navLinks) return;
+
+    // Eliminar elementos de sesión creados anteriormente
+    const sesionAnterior = navLinks.querySelector('.sesion-usuario');
+    
+    if (sesionAnterior) {
+        sesionAnterior.remove();
+    }
+
+    const adminAnterior = navLinks.querySelector('.admin-link');
+
+    if (adminAnterior) {
+        adminAnterior.remove();
+    }
+
+    // Si no hay usuario conectado
+    if (!usuario) {
+        return;
+    }
+
+    // Crear nombre del usuario
+    const usuarioLink = document.createElement('span');
+
+    usuarioLink.className = 'sesion-usuario';
+
+    usuarioLink.innerHTML =
+        `👤 ${usuario.nombre}`;
+
+    navLinks.appendChild(usuarioLink);
+
+
+    // Si es administrador mostrar Administración
+    if (usuario.rol === 'Administrador') {
+
+        const adminLink = document.createElement('a');
+
+        adminLink.href = 'admin/index.html';
+        adminLink.className = 'admin-link';
+        adminLink.textContent = 'Administración';
+
+        navLinks.appendChild(adminLink);
+    }
+
+
+    // Crear botón cerrar sesión
+    const cerrarLink = document.createElement('a');
+
+    cerrarLink.href = '#';
+    cerrarLink.className = 'sesion-usuario';
+    cerrarLink.textContent = 'Cerrar sesión';
+
+    cerrarLink.addEventListener('click', function(event) {
+        event.preventDefault();
+        cerrarSesion();
+    });
+
+    navLinks.appendChild(cerrarLink);
+}
+
+
+function cerrarSesion() {
+
+    localStorage.removeItem('patitasUsuarioActual');
+
+    actualizarSesionNavbar();
+
+    window.location.href = 'index.html';
 }
 
 function cargarRegiones() {
@@ -385,14 +921,6 @@ function prepararFormularioAdmin() {
     });
 }
 
-function mostrarTablaAdminProductos() {
-    const tabla = document.getElementById('admin-productos-body');
-    if (!tabla) return;
-    const adicionales = JSON.parse(localStorage.getItem('patitasProductos')) || [];
-    const todos = obtenerProductos();
-    tabla.innerHTML = todos.map(p => `<tr><td>${p.codigo || '-'}</td><td>${p.nombre}</td><td>${formatoPrecio(p.precio)}</td><td>${p.stock}</td><td>${p.categoria}</td><td>${p.id > 4 ? `<a class="btn btn-light btn-small" href="producto.html?id=${p.id}">Editar</a> <button class="btn btn-danger btn-small" type="button" onclick="eliminarProductoAdmin(${p.id})">Eliminar</button>` : '<span class="muted">Base</span>'}</td></tr>`).join('');
-}
-
 function eliminarProductoAdmin(id) {
     const lista = JSON.parse(localStorage.getItem('patitasProductos')) || [];
     localStorage.setItem('patitasProductos', JSON.stringify(lista.filter(p => p.id !== id)));
@@ -429,7 +957,19 @@ function mostrarUsuariosAdmin() {
     const tabla = document.getElementById('admin-usuarios-body');
     if (!tabla) return;
     const usuarios = JSON.parse(localStorage.getItem('patitasUsuarios')) || [];
-    tabla.innerHTML = usuarios.length ? usuarios.map((u, i) => `<tr><td>${u.run}</td><td>${u.nombre} ${u.apellidos || ''}</td><td>${u.correo}</td><td>${u.rol}</td><td><button class="btn btn-danger btn-small" type="button" onclick="eliminarUsuarioAdmin(${i})">Eliminar</button></td></tr>`).join('') : '<tr><td colspan="5">No hay usuarios registrados todavía.</td></tr>';
+    tabla.innerHTML = usuarios.length ? usuarios.map((u, i) => `<tr><td>${u.run}</td><td>${u.nombre} ${u.apellidos || ''}</td><td>${u.correo}</td><td>${u.rol}</td>
+    <td>
+        ${
+            u.correo === 'admin@duoc.cl'
+                ? '<span class="muted">🔒 Protegido</span>'
+                : `<button class="btn btn-danger btn-small"
+                    type="button"
+                    onclick="eliminarUsuarioAdmin('${u.run}')">
+                    Eliminar
+                </button>`
+        }
+    </td>
+    </tr>`).join('') : '<tr><td colspan="5">No hay usuarios registrados todavía.</td></tr>';
 }
 
 function eliminarUsuarioAdmin(indice) {
@@ -452,5 +992,10 @@ function inicializar() {
     mostrarUsuariosAdmin();
 }
 
-document.addEventListener('DOMContentLoaded', inicializar);
+crearAdministradorInicial();
 
+document.addEventListener('DOMContentLoaded', function () {
+    actualizarSesionNavbar();
+});
+
+document.addEventListener('DOMContentLoaded', inicializar);
