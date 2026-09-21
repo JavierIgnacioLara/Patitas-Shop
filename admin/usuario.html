@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Patitas Shop | Admin usuarios</title>
+        <title>Patitas Shop | Usuarios</title>
         <link rel="stylesheet" href="../css/estilos.css">
         <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
     </head>
@@ -17,54 +17,100 @@
                 <a href="../index.html">Volver a tienda</a>
             </aside>
             <section class="admin-content">
-                <h1>Mantenedor de usuarios</h1>
-                <div class="notice">Roles asociados al sistema: Administrador, Cliente y Vendedor.</div>
-                <form id="form-usuario-admin" class="form-card" style="margin:25px 0 30px">
-                    <div class="form-group">
-                        <label for="usuario-run">RUN</label>
-                        <input id="usuario-run" maxlength="9" placeholder="19011022K" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="usuario-nombre">Nombre</label>
-                        <input id="usuario-nombre" maxlength="50" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="usuario-apellidos">Apellidos</label>
-                        <input id="usuario-apellidos" maxlength="100" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="usuario-correo">Correo</label>
-                        <input id="usuario-correo" type="email" maxlength="100" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="usuario-rol">Tipo de usuario</label>
-                        <select id="usuario-rol" required>
-                            <option value="">Selecciona un rol</option>
-                            <option>Administrador</option>
-                            <option>Cliente</option>
-                            <option>Vendedor</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-orange" type="submit">Crear usuario</button>
-                    <div id="usuario-resultado" class="form-message"></div>
-                </form>
-                <h2>Usuarios registrados</h2>
-                <div class="table-responsive">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>RUN</th>
-                                <th>Nombre</th>
-                                <th>Correo</th>
-                                <th>Rol</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-usuarios-body"></tbody>
-                    </table>
-                </div>
+                <h1>Usuarios</h1>
+                                <button class="btn btn-orange" type="button" onclick="nuevoUsuario()">➕ Nuevo usuario</button>
+
+                <section id="panel-formulario" class="form-card" hidden>
+                    <h2 id="titulo-formulario">Nuevo usuario</h2>
+
+                    <form id="form-gestion-usuario" onsubmit="guardarUsuario(event)" novalidate autocomplete="off">
+
+                        <div class="form-group">
+                            <label for="usuario-run">RUN</label>
+                            <input id="usuario-run" maxlength="9" placeholder="19011022K">
+                            <div id="error-usuario-run" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-nombre">Nombre</label>
+                            <input id="usuario-nombre" maxlength="50">
+                            <div id="error-usuario-nombre" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-apellidos">Apellidos</label>
+                            <input id="usuario-apellidos" maxlength="100">
+                            <div id="error-usuario-apellidos" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-correo">Correo</label>
+                            <input id="usuario-correo" type="email" maxlength="100">
+                            <div id="error-usuario-correo" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-clave">Contraseña</label>
+                            <input id="usuario-clave" type="password" maxlength="10">
+                            <div id="error-usuario-clave" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-rol">Rol</label>
+                            <select id="usuario-rol">
+                                <option value="">Selecciona un rol</option>
+                                <option value="Cliente">Cliente</option>
+                                <option value="Administrador">Administrador</option>
+                            </select>
+                            <div id="error-usuario-rol" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-fecha">Fecha de nacimiento (opcional)</label>
+                            <input id="usuario-fecha" type="date">
+                            <div id="error-usuario-fecha" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-region">Región</label>
+                            <select id="usuario-region"></select>
+                            <div id="error-usuario-region" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-comuna">Comuna</label>
+                            <select id="usuario-comuna">
+                                <option value="">Selecciona una comuna</option>
+                            </select>
+                            <div id="error-usuario-comuna" class="form-message"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usuario-direccion">Dirección</label>
+                            <textarea id="usuario-direccion" maxlength="300"></textarea>
+                            <div id="error-usuario-direccion" class="form-message"></div>
+                        </div>
+
+                        <button class="btn btn-orange" type="submit">Guardar</button>
+                        <button class="btn btn-light" type="button" onclick="cerrarFormulario()">Cancelar</button>
+                    </form>
+                </section>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>RUN</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usuarios-tbody">
+                        
+                    </tbody>
+                </table>
             </section>
         </div>
         <script src="../js/app.js"></script>
+        <script src="../js/usuarios-admin.js"></script>
     </body>
 </html>
