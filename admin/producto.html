@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Patitas Shop | Admin productos</title>
+
+    <link rel="stylesheet" href="../css/estilos.css">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="admin-layout">
+        <aside class="admin-menu">
+
+            <h2>🐾 Patitas</h2>
+            <a href="index.html">Inicio</a>
+            <a href="producto.html">Productos</a>
+            <a href="usuario.html">Usuarios</a>
+            <a href="../index.html">Volver a tienda</a>
+
+        </aside>
+        <section class="admin-content">
+
+            <h1 id="admin-titulo-form">
+                Nuevo producto
+            </h1>
+
+            <form
+                id="form-producto-admin"
+                class="form-card"
+                style="margin:25px 0 30px"
+            >
+                <!-- Código -->
+                <div class="form-group">
+
+                    <label for="admin-codigo">
+                        Código producto
+                    </label>
+
+                    <input
+                        id="admin-codigo"
+                        required
+                        minlength="3"
+                    >
+
+                </div>
+
+                <!-- Nombre -->
+                <div class="form-group">
+
+                    <label for="admin-nombre">
+                        Nombre
+                    </label>
+                    <input
+                        id="admin-nombre"
+                        maxlength="100"
+                        required
+                    >
+                </div>
+                <!-- Descripción -->
+                <div class="form-group">
+
+                    <label for="admin-descripcion">
+                        Descripción
+                    </label>
+
+                    <textarea
+                        id="admin-descripcion"
+                        maxlength="500"
+                    ></textarea>
+
+                </div>
+
+
+                <!-- Precio -->
+                <div class="form-group">
+
+                    <label for="admin-precio">
+                        Precio
+                    </label>
+
+                    <input
+                        id="admin-precio"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Stock -->
+                <div class="form-group">
+
+                    <label for="admin-stock">
+                        Stock
+                    </label>
+
+                    <input
+                        id="admin-stock"
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Stock crítico -->
+                <div class="form-group">
+
+                    <label for="admin-stock-critico">
+                        Stock crítico
+                    </label>
+
+                    <input
+                        id="admin-stock-critico"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value="0"
+                    >
+
+                </div>
+
+
+                <!-- Categoría -->
+                <div class="form-group">
+
+                    <label for="admin-categoria">
+                        Categoría
+                    </label>
+
+                    <select id="admin-categoria" required>
+
+                        <option value="">
+                            Selecciona una categoría
+                        </option>
+
+                        <option value="Perros">
+                            Perros
+                        </option>
+
+                        <option value="Gatos">
+                            Gatos
+                        </option>
+
+                        <option value="Accesorios">
+                            Accesorios
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Imagen -->
+                <div class="form-group">
+
+                    <label for="admin-imagen">
+                        Imagen
+                    </label>
+
+                    <input
+                        id="admin-imagen"
+                        type="text"
+                        placeholder="img/producto-nombre.jpg"
+                    >
+
+                </div>
+
+
+                <!-- Botones -->
+                <div class="admin-actions">
+
+                    <button
+                        type="submit"
+                        class="btn btn-orange"
+                    >
+                        Guardar producto
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-light"
+                        onclick="limpiarFormularioAdmin()"
+                    >
+                        Limpiar
+                    </button>
+
+                </div>
+
+                <div
+                    id="resultado-admin-producto"
+                    class="message"
+                ></div>
+
+            </form>
+
+            <section class="admin-section">
+
+                <div class="section-title">
+
+                    <h2>
+                        Productos existentes
+                    </h2>
+
+                    <p>
+                        Consulta y modifica el stock de los productos registrados.
+                    </p>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table class="admin-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Código
+                                </th>
+
+                                <th>
+                                    Producto
+                                </th>
+
+                                <th>
+                                    Categoría
+                                </th>
+
+                                <th>
+                                    Precio
+                                </th>
+
+                                <th>
+                                    Stock
+                                </th>
+
+                                <th>
+                                    Stock crítico
+                                </th>
+
+                                <th>
+                                    Acción
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="tabla-productos-admin">
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </section>
+
+    </div>
+
+    <script src="../js/app.js"></script>
+
+</body>
+
+</html>
