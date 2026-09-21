@@ -1,4 +1,3 @@
-// JavaScript principal de Patitas Shop
 const productosBase = [
     { id: 1, codigo: 'P001', nombre: 'Alimento Premium Perro', precio: 15990, categoria: 'Perros', stock: 15, stockCritico: 5, imagen: 'img/producto-perro.jpg', descripcion: 'Alimento balanceado para perros adultos.' },
     { id: 2, codigo: 'P002', nombre: 'Alimento Premium Gato', precio: 12990, categoria: 'Gatos', stock: 12, stockCritico: 4, imagen: 'img/producto-gato.jpg', descripcion: 'Alimento completo para gatos adultos.' },
@@ -56,16 +55,31 @@ function formatoPrecio(valor) {
     return '$' + Number(valor).toLocaleString('es-CL');
 }
 
+function obtenerProductosEliminados() {
+    return JSON.parse(localStorage.getItem('patitasProductosEliminados')) || [];
+}
+
+function guardarProductosEliminados(ids) {
+    localStorage.setItem('patitasProductosEliminados', JSON.stringify(ids));
+}
+
 function obtenerProductos() {
 
     const adicionales =
         JSON.parse(localStorage.getItem('patitasProductos')) || [];
+    const eliminados = new Set(obtenerProductosEliminados());
 
-    // Crear una copia de los productos base
-    const productos = [...productosBase];
+    // Crear una copia de los productos base, excluyendo los eliminados
+    const productos = productosBase.filter(
+        producto => !eliminados.has(producto.id)
+    );
 
     // Reemplazar los productos base que hayan sido modificados
     adicionales.forEach(productoActualizado => {
+
+        if (eliminados.has(productoActualizado.id)) {
+            return;
+        }
 
         const indice = productos.findIndex(
             p => p.id === productoActualizado.id
@@ -178,6 +192,13 @@ function mostrarTablaAdminProductos() {
                     onclick="actualizarStockProducto(${producto.id})"
                 >
                     Guardar
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-orange"
+                    onclick="eliminarProductoAdmin(${producto.id})"
+                >
+                    Eliminar
                 </button>
             </td>
 
@@ -904,10 +925,12 @@ function prepararFormularioAdmin() {
         const stockCritico = Number(document.getElementById('admin-stock-critico').value || 0);
         const categoria = document.getElementById('admin-categoria').value;
         const imagen = document.getElementById('admin-imagen').value.trim() || 'img/patitashop2.png';
-        const resultado = document.getElementById('admin-resultado');
+        const resultado = document.getElementById('resultado-admin-producto') || document.getElementById('admin-resultado');
         if (!codigo || codigo.length < 3 || !nombre || nombre.length > 100 || descripcion.length > 500 || precio < 0 || stock < 0 || !Number.isInteger(stock) || stockCritico < 0 || !Number.isInteger(stockCritico) || !categoria) {
-            resultado.textContent = 'Revisa los campos según las reglas del proyecto.';
-            resultado.className = 'form-message error';
+            if (resultado) {
+                resultado.textContent = 'Revisa los campos según las reglas del proyecto.';
+                resultado.className = 'form-message error';
+            }
             return;
         }
         const lista = JSON.parse(localStorage.getItem('patitasProductos')) || [];
@@ -915,16 +938,32 @@ function prepararFormularioAdmin() {
         const indice = lista.findIndex(p => p.id === producto.id);
         if (indice >= 0) lista[indice] = producto; else lista.push(producto);
         guardarProductosAdicionales(lista);
-        resultado.textContent = editarId ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.';
-        resultado.className = 'form-message ok';
-        setTimeout(() => location.href = 'producto.html', 600);
+
+        if (typeof mostrarTablaAdminProductos === 'function') {
+            mostrarTablaAdminProductos();
+        }
+
+        if (resultado) {
+            resultado.textContent = editarId ? 'Producto actualizado correctamente.' : 'Producto agregado correctamente.';
+            resultado.className = 'form-message ok';
+        }
+
+        form.reset();
+        document.getElementById('admin-titulo-form').textContent = 'Nuevo producto';
+        document.getElementById('admin-codigo').focus();
     });
 }
 
 function eliminarProductoAdmin(id) {
     const lista = JSON.parse(localStorage.getItem('patitasProductos')) || [];
-    localStorage.setItem('patitasProductos', JSON.stringify(lista.filter(p => p.id !== id)));
+    const eliminados = new Set(obtenerProductosEliminados());
+    eliminados.add(Number(id));
+
+    localStorage.setItem('patitasProductos', JSON.stringify(lista.filter(p => p.id !== Number(id))));
+    guardarProductosEliminados([...eliminados]);
     mostrarTablaAdminProductos();
+
+    alert('Producto eliminado correctamente.');
 }
 
 function prepararFormularioUsuarioAdmin() {
