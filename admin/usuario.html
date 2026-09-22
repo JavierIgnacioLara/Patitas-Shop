@@ -96,6 +96,12 @@
                         <button class="btn btn-light" type="button" onclick="cerrarFormulario()">Cancelar</button>
                                                 <div id="usuario-resultado" class="form-message"></div>
                     </form>
+
+                </section>
+                 <section id="panel-detalle" class="form-card" hidden>
+                    <h2>Información del usuario</h2>
+                    <dl id="detalle-usuario"></dl>
+                    <button class="btn btn-light" type="button" onclick="cerrarDetalle()">Cerrar</button>
                 </section>
                 <table class="admin-table">
                     <thead>
@@ -104,6 +110,7 @@
                             <th>Nombre</th>
                             <th>Correo</th>
                             <th>Rol</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="usuarios-tbody">

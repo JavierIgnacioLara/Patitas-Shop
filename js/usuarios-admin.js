@@ -9,20 +9,33 @@ function listarUsarios(){
     const tbody = document.getElementById('usuarios-tbody');
     const usuarios = leerUsuarios();
 
-    tbody.innerHTML = usuarios.map(u => `
+        tbody.innerHTML = usuarios.map(u => `
         <tr>
             <td>${u.run}</td>
             <td>${u.nombre} ${u.apellidos}</td>
             <td>${u.correo}</td>
             <td>${u.rol}</td>
+            <td>
+                <button class="btn btn-light btn-small" type="button" onclick="verUsuario('${u.run}')">Ver</button>
+                <button class="btn btn-orange btn-small" type="button" onclick="editarUsuario('${u.run}')">Editar</button>
+            </td>
         </tr>`).join('');
 }
 
 listarUsarios();
 
+// Guarda el RUN del usuario que estamos editando, o null si estamos creando uno nuevo
+
+let runEditando = null;
+
 // Mostrar formulario
 
 function nuevoUsuario(){
+   
+    runEditando = null;
+    document.getElementById('titulo-formulario').textContent = 'Nuevo usuario';
+    document.getElementById('usuario-run').disabled = false;
+    document.getElementById('form-gestion-usuario').reset();
     document.getElementById('panel-formulario').hidden = false;
 
 }
@@ -31,6 +44,29 @@ function nuevoUsuario(){
 
 function cerrarFormulario(){
     document.getElementById('panel-formulario').hidden = true;
+}
+
+// Muestra el formulario ya lleno con los datos de un usuario, para editarlo
+function editarUsuario(run) {
+    const usuario = leerUsuarios().find(u => u.run === run);
+    if (!usuario) return;
+
+    runEditando = run;
+    document.getElementById('titulo-formulario').textContent = 'Editar usuario';
+
+    document.getElementById('usuario-run').value = usuario.run;
+    document.getElementById('usuario-run').disabled = true;
+    document.getElementById('usuario-nombre').value = usuario.nombre;
+    document.getElementById('usuario-apellidos').value = usuario.apellidos;
+    document.getElementById('usuario-correo').value = usuario.correo;
+    document.getElementById('usuario-clave').value = usuario.clave;
+    document.getElementById('usuario-rol').value = usuario.rol;
+    document.getElementById('usuario-region').value = usuario.region;
+    cargarComunasUsuario();
+    document.getElementById('usuario-comuna').value = usuario.comuna;
+    document.getElementById('usuario-direccion').value = usuario.direccion;
+
+    document.getElementById('panel-formulario').hidden = false;
 }
 
 //Llena el select de regiones usando la lista que ya existe en el apps.js
@@ -118,28 +154,60 @@ function guardarUsuario(event) {
 
     if (hayError) return; // si algo está mal, no seguimos
 
-        // 3) Revisar que el RUN y el correo no estén repetidos
+    // 3) Revisar que el RUN y el correo no estén repetidos
     const usuarios = leerUsuarios();
 
-    const runRepetido = usuarios.some(u => u.run === datos.run);
-    if (runRepetido) {
-        mostrarMensaje('error-usuario-run', 'Ese RUN ya está registrado.', 'error');
-        return;
+    if (!runEditando) {
+        const runRepetido = usuarios.some(u => u.run === datos.run);
+        if (runRepetido) {
+            mostrarMensaje('error-usuario-run', 'Ese RUN ya está registrado.', 'error');
+            return;
+        }
     }
 
-    const correoRepetido = usuarios.some(u => u.correo.toLowerCase() === datos.correo.toLowerCase());
+    const correoRepetido = usuarios.some(u => u.correo.toLowerCase() === datos.correo.toLowerCase() && u.run !== datos.run);
     if (correoRepetido) {
         mostrarMensaje('error-usuario-correo', 'Ese correo ya está registrado.', 'error');
         return;
     }
 
-    // 4) Guardar en el "cuaderno" del navegador
-    usuarios.push(datos);
+    // 4) Guardar en el "cuaderno" del navegador: reemplazar si estamos editando, o agregar si es nuevo
+    if (runEditando) {
+        const indice = usuarios.findIndex(u => u.run === runEditando);
+        usuarios[indice] = datos;
+    } else {
+        usuarios.push(datos);
+    }
     localStorage.setItem('patitasUsuarios', JSON.stringify(usuarios));
 
     // 5) Avisar, cerrar el formulario y actualizar la tabla
-    mostrarMensaje('usuario-resultado', 'Usuario creado correctamente.', 'ok');
+    mostrarMensaje('usuario-resultado', runEditando ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.', 'ok');
+    runEditando = null;
+    document.getElementById('usuario-run').disabled = false;
     document.getElementById('form-gestion-usuario').reset();
     cerrarFormulario();
     listarUsarios();
+}
+
+// Muestra el detalle completo de un usuario
+function verUsuario(run) {
+    const usuario = leerUsuarios().find(u => u.run === run);
+    if (!usuario) return;
+
+    document.getElementById('detalle-usuario').innerHTML = `
+        <dt>RUN</dt><dd>${usuario.run}</dd>
+        <dt>Nombre</dt><dd>${usuario.nombre}</dd>
+        <dt>Apellidos</dt><dd>${usuario.apellidos}</dd>
+        <dt>Correo</dt><dd>${usuario.correo}</dd>
+        <dt>Rol</dt><dd>${usuario.rol}</dd>
+        <dt>Región</dt><dd>${usuario.region}</dd>
+        <dt>Comuna</dt><dd>${usuario.comuna}</dd>
+        <dt>Dirección</dt><dd>${usuario.direccion}</dd>`;
+
+    document.getElementById('panel-detalle').hidden = false;
+}
+
+// Esconde el detalle
+function cerrarDetalle() {
+    document.getElementById('panel-detalle').hidden = true;
 }
